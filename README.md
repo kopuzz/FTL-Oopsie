@@ -1,6 +1,6 @@
 FTL-Oopsie is a multi platform CLI save file manager for Faster Than Light.
 
-Requierments:
+Requirements:
     python3+
 
 Before you run the script open settings.json and set "DIRECTORY" to the path of your FTL save directory.
