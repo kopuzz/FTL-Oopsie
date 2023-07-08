@@ -1,0 +1,9 @@
+{
+    "ftl_oopsie_settings": {
+        "DIRECTORY": "/home/{USER_NAME}/.local/share/FasterThanLight/",
+        "BACKUP_DIRECTORY_NAME": "save-backups/",
+        "SAVE_FILE_NAME": "ae_prof.sav",
+        "INI_FILE_NAME": "settings.ini",
+        "BINARY_PATH": ""
+    }
+}
