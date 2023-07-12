@@ -24,7 +24,7 @@ def help():
         "   b  or  backup       - backup mode\n"
         "   r  or  restore      - restore mode\n"
         "   nn or  no-name      - use this and you wont be asked for a custom name (quick backups)\n"
-        "   dj or  dump-json    - dumps defaut FTL json settings\n\n"
+        "   dj or  dump-json    - dumps default FTL json settings\n\n"
         "If both backup and restore are used, backups will happen first.\n\n"
         "If this script cant find your save and settings files please check these locations.\n\n"
         "NIX : /home/USER_NAME/.local/share/FasterThanLight\n"
