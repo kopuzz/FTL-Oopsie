@@ -1,54 +1,19 @@
-#!/bin/python3
-"""
-  Copyright (c) 2023 TpoMad
-  All rights reserved.
-
-  This file is part of FTL-Oopsie.
-
-  FTL-Oopsie is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, GPL3.
-
-  FTL-Oopsie is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with FTL-Oopsie. If not, see <http://www.gnu.org/licenses/>.
-
-  You are required to maintain this copyright notice in all copies or
-  substantial portions of the software.
-"""
+#!/bin/python
 
 
-import os
-import sys
-import time
-import json
-from shutil import copy2
-from datetime import datetime
+from os import path
+from sys import argv
 import colorama
 from colorama import Fore
 from colorama import Style
+from pathlib import Path
+from json import loads
+from time import sleep
+from datetime import datetime
+from shutil import copy2
+
 
 colorama.init() # for windows, does nothing on nix
-
-
-SEP = "\\" if os.name == "nt" else "/"
-SCRIPT_DIRECTORY = os.path.dirname(os.path.realpath(sys.argv[0]))
-JSON_DATA = None
-with open(f"{SCRIPT_DIRECTORY}{SEP}settings.json", "r") as jf:
-    JSON_DATA = json.loads(jf.read())
-
-FTL_SAVE_FILE_NAME = JSON_DATA["ftl_oopsie_settings"]["SAVE_FILE_NAME"]
-FTL_INI_FILE_MAME = JSON_DATA["ftl_oopsie_settings"]["INI_FILE_NAME"]
-FTL_BACKUP_DIRECTORY_NAME = JSON_DATA["ftl_oopsie_settings"]["BACKUP_DIRECTORY_NAME"]
-FTL_SAVE_DIRECTORY = JSON_DATA["ftl_oopsie_settings"]["DIRECTORY"]
-
-FTL_SAVE_FILE_PATH = FTL_SAVE_DIRECTORY + FTL_SAVE_FILE_NAME
-FTL_INI_FILE_PATH = FTL_SAVE_DIRECTORY + FTL_INI_FILE_MAME
-FTL_BACKUP_DIRECTORY = FTL_SAVE_DIRECTORY + FTL_BACKUP_DIRECTORY_NAME
 
 
 def help():
@@ -64,20 +29,48 @@ def help():
         "If this script cant find your save and settings files please check these locations.\n\n"
         "NIX : /home/USER_NAME/.local/share/FasterThanLight\n"
         "MAC : /home/USER_NAME/Library/Application Support/FasterThanLight\n"
-        "WIN : USER_NAME\Documents\My Games\FasterThanLight\n"
+        "WIN : USER_NAME\\Documents\\My Games\\FasterThanLight\n"
     )
 
 
-def restore():
+class OopsieConfig:
+    def __init__(self, json_data):
+        self.FTL_SAVE_FILE_NAME = json_data["ftl_oopsie_settings"]["SAVE_FILE_NAME"]
+        self.FTL_INI_FILE_MAME = json_data["ftl_oopsie_settings"]["INI_FILE_NAME"]
+        self.FTL_BACKUP_DIRECTORY_NAME = json_data["ftl_oopsie_settings"]["BACKUP_DIRECTORY_NAME"]
+        self.FTL_SAVE_DIRECTORY = json_data["ftl_oopsie_settings"]["DIRECTORY"]
+        self.FTL_SAVE_FILE_PATH = self.FTL_SAVE_DIRECTORY + self.FTL_SAVE_FILE_NAME
+        self.FTL_INI_FILE_PATH = self.FTL_SAVE_DIRECTORY + self.FTL_INI_FILE_MAME
+        self.FTL_BACKUP_DIRECTORY = self.FTL_SAVE_DIRECTORY + self.FTL_BACKUP_DIRECTORY_NAME
+
+
+def parse_json(file_path):
+    json_data = None
+    try:
+        with open(file_path, "r") as fh:
+            json_data = loads(fh.read())
+
+    except IOError as e:
+        print(f"I/O error({e.errno}): {e.strerror}")
+        return None
+
+    except:
+        print(f"Unexpected error: {exc_info()[0]}")
+        return None
+
+    return json_data
+
+
+def restore(cfg):
     files = []
-    for idx, file in enumerate(os.listdir(FTL_BACKUP_DIRECTORY)):
-        even = idx%2    # used to dim every other entry for easy reading
-        if FTL_SAVE_FILE_NAME in file:
+    for idx, file in enumerate(os.listdir(cfg.FTL_BACKUP_DIRECTORY)):
+        even = idx % 2      # used to dim every other entry for easy reading
+        if cfg.FTL_SAVE_FILE_NAME in file:
             print(
                 f"{Fore.CYAN}[{Style.DIM if not even else Style.NORMAL}{idx}] - {file}{Style.RESET_ALL}"
             )
         
-        if FTL_INI_FILE_MAME in file:
+        if cfg.FTL_INI_FILE_MAME in file:
             print(
                 f"{Fore.GREEN}[{Style.DIM if not even else Style.NORMAL}{idx}] - {file}{Style.RESET_ALL}"
             )
@@ -97,35 +90,35 @@ def restore():
         exit()
 
     print("Resotring ..")
-    if FTL_SAVE_FILE_NAME in files[user_input]:
+    if cfg.FTL_SAVE_FILE_NAME in files[user_input]:
         print(
-            f"{files[user_input]} > {copy2(FTL_BACKUP_DIRECTORY + files[user_input], FTL_SAVE_FILE_PATH)}"
+            f"{files[user_input]} > {copy2(cfg.FTL_BACKUP_DIRECTORY + files[user_input], FTL_SAVE_FILE_PATH)}"
         )
-    elif FTL_INI_FILE_MAME in files[user_input]:
+    elif cfg.FTL_INI_FILE_MAME in files[user_input]:
         print(
-            f"{files[user_input]} > {copy2(FTL_BACKUP_DIRECTORY + files[user_input], FTL_INI_FILE_PATH)}"
+            f"{files[user_input]} > {copy2(cfg.FTL_BACKUP_DIRECTORY + files[user_input], FTL_INI_FILE_PATH)}"
         )
 
-    time.sleep(0.5)
-    print(f"Finished!")
+    sleep(0.5)
+    print("Finished!")
 
 
-def backup(no_name=False):
+def backup(cfg, no_name=False):
     DATE_TIME = datetime.now().strftime("%d-%B-%y-%H-%M-%S")
-    FTL_BACKUP_SAVE_PATH = FTL_BACKUP_DIRECTORY + f"{DATE_TIME}_{FTL_SAVE_FILE_NAME}"
-    FTL_BACKUP_INI_PATH = FTL_BACKUP_DIRECTORY + f"{DATE_TIME}_{FTL_INI_FILE_MAME}"
+    FTL_BACKUP_SAVE_PATH = cfg.FTL_BACKUP_DIRECTORY + f"{DATE_TIME}_{cfg.FTL_SAVE_FILE_NAME}"
+    FTL_BACKUP_INI_PATH = cfg.FTL_BACKUP_DIRECTORY + f"{DATE_TIME}_{cfg.FTL_INI_FILE_MAME}"
 
-    if not os.path.exists(FTL_SAVE_FILE_PATH):
-        print(f"File: {Fore.RED}{FTL_SAVE_FILE_PATH}> not found.{Fore.RESET}")
+    if not path.exists(cfg.FTL_SAVE_FILE_PATH):
+        print(f"File: {Fore.RED}{cfg.FTL_SAVE_FILE_PATH}> not found.{Fore.RESET}")
         exit()
 
-    if not os.path.exists(FTL_INI_FILE_PATH):
-        print(f"File: {Fore.RED}{FTL_INI_FILE_PATH}> not found.{Fore.RESET}")
+    if not path.exists(cfg.FTL_INI_FILE_PATH):
+        print(f"File: {Fore.RED}{cfg.FTL_INI_FILE_PATH}> not found.{Fore.RESET}")
         exit()
 
-    if not os.path.exists(FTL_BACKUP_DIRECTORY):
-        print(f"Creating a backup directory at: {FTL_BACKUP_DIRECTORY}")
-        os.mkdir(FTL_BACKUP_DIRECTORY)
+    if not path.exists(cfg.FTL_BACKUP_DIRECTORY):
+        print(f"Creating a backup directory at: {cfg.FTL_BACKUP_DIRECTORY}")
+        os.mkdir(cfg.FTL_BACKUP_DIRECTORY)
 
     if not no_name:
         print("Would you like to give this round of backups a custom name?")
@@ -134,35 +127,41 @@ def backup(no_name=False):
             user_input = input(f"{Fore.BLUE}Name{Fore.RESET}> ")
             user_input = user_input + "_"
             FTL_BACKUP_INI_PATH = (
-                FTL_BACKUP_DIRECTORY + f"{DATE_TIME}_{user_input}_{FTL_INI_FILE_MAME}"
+                cfg.FTL_BACKUP_DIRECTORY + f"{DATE_TIME}_{user_input}_{cfg.FTL_INI_FILE_MAME}"
             )
             FTL_BACKUP_SAVE_PATH = (
-                FTL_BACKUP_DIRECTORY + f"{DATE_TIME}_{user_input}_{FTL_SAVE_FILE_NAME}"
+                cfg.FTL_BACKUP_DIRECTORY + f"{DATE_TIME}_{user_input}_{cfg.FTL_SAVE_FILE_NAME}"
             )
 
     print("Backing up your save and settings files")
-    print(f" > {copy2(FTL_INI_FILE_PATH, FTL_BACKUP_INI_PATH)}")
-    time.sleep(0.5)
-    print(f" > {copy2(FTL_SAVE_FILE_PATH, FTL_BACKUP_SAVE_PATH)}")
-    time.sleep(0.5)
-    print("Finished!\n")
+    print(f" > {copy2(cfg.FTL_INI_FILE_PATH, FTL_BACKUP_INI_PATH)}")
+    sleep(0.5)
+    print(f" > {copy2(cfg.FTL_SAVE_FILE_PATH, FTL_BACKUP_SAVE_PATH)}")
+    sleep(0.5)
+    print(f"{Fore.GREEN}Finished!{Fore.RESET}\n")
 
 
 def main(backup_files=False, restore_file=False, no_name=False):
+    SCRIPT_DIRECTORY = path.dirname(path.realpath(argv[0]))
+    user_config = OopsieConfig(parse_json(Path(SCRIPT_DIRECTORY, "settings.json")))
+    if not user_config:
+        help()
+        return
+
     if not backup_files and not restore_file:
         help()
         return
 
-    if not os.path.exists(FTL_SAVE_DIRECTORY):
-        print(f"{Fore.RED}Driectory: {FTL_SAVE_DIRECTORY} not found.{Fore.RESET}")
+    if not path.exists(user_config.FTL_SAVE_DIRECTORY):
+        print(f"{Fore.RED}Driectory: {user_config.FTL_SAVE_DIRECTORY} not found.{Fore.RESET}")
         help()
         return
 
     if backup_files:
-        backup(no_name)
+        backup(user_config, no_name)
 
     if restore_file:
-        restore()
+        restore(user_config)
 
 
 DEFAULT_JSON_SETTINGS = """
@@ -176,17 +175,18 @@ DEFAULT_JSON_SETTINGS = """
 }
 """
 
+
 if __name__ == "__main__":
-    if "help" in sys.argv or "h" in sys.argv:
+    if "help" in argv or "h" in argv:
         help()
         exit()
 
-    if "dump-json" in sys.argv or "dj" in sys.argv:
+    if "dump-json" in argv or "dj" in argv:
         print(DEFAULT_JSON_SETTINGS)
         exit()
 
     main(
-        True if "backup" in sys.argv or "b" in sys.argv else False,
-        True if "restore" in sys.argv or "r" in sys.argv else False,
-        True if "no-name" in sys.argv or "nn" in sys.argv else False,
+        True if "backup" in argv or "b" in argv else False,
+        True if "restore" in argv or "r" in argv else False,
+        True if "no-name" in argv or "nn" in argv else False,
     )
