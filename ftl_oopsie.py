@@ -1,5 +1,3 @@
-#!/bin/python3.11
-
 """
 *********************************************************************************
 *    Copyright (c) 2023 TpoMad                                                  *
@@ -37,23 +35,30 @@ from datetime import datetime
 from shutil import copy2
 
 
-colorama.init() # for windows, does nothing on nix
+print("""
+____ ___ _       ____ ____ ___  ____ _ ____
+|___  |  |    __ |  | |  | |__] [__  | |___
+|     |  |___    |__| |__| |    ___] | |___
+\n      (keep your FTL save files safe)
+""")
 
 
 def help():
     print(
-        "Usage:\n"
+        "\nUsage:\n"
         "   ftl_oopsie.py [options]\n\n"
         "Options:\n"
+        "   [mode]\n"
         "   b  or  backup       - backup mode\n"
         "   r  or  restore      - restore mode\n"
-        "   nn or  no-name      - use this and you wont be asked for a custom name (quick backups)\n"
-        "   dj or  dump-json    - dumps defaut FTL json settings\n\n"
+        "   ----------------------------------\n"
+        "   nn or  no-name      - default naming convention\n"
+        "   dj or  dump-json    - dumps defaut json settings\n\n"
         "If both backup and restore are used, backups will happen first.\n\n"
-        "If this script cant find your save and settings files please check these locations.\n\n"
+        "Script can't find files, check these locations\n\n"
         "NIX : /home/USER_NAME/.local/share/FasterThanLight\n"
         "MAC : /home/USER_NAME/Library/Application Support/FasterThanLight\n"
-        "WIN : USER_NAME\\Documents\\My Games\\FasterThanLight\n"
+        "WIN : USER_NAME\\Documents\\My Games\\FasterThanLight"
     )
 
 
@@ -184,7 +189,7 @@ def main(backup=False, restore=False, no_name=False):
     SCRIPT_DIRECTORY = path.dirname(path.realpath(argv[0]))
     user_config = OopsieConfig(parse_json(Path(SCRIPT_DIRECTORY, "settings.json")))
     if not user_config:
-        log_info("ERR", "user config is: None")
+        log_info("ERR", "user config is: Fucked")
         help()
         return
 
@@ -222,13 +227,14 @@ DEFAULT_JSON_SETTINGS = """
 
 
 if __name__ == "__main__":
-    print("FTL-Oopsie (to never make the same mistake again)\n")
+    colorama.init() # for windows, does nothing on nix
     if "help" in argv or "h" in argv:
         help()
         exit()
 
     if "dump-json" in argv or "dj" in argv:
-        print(DEFAULT_JSON_SETTINGS)
+        help()
+        print(DEFAULT_JSON_SETTINGS, ":0")
         exit()
 
     main(
